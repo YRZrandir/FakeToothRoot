@@ -31,14 +31,16 @@ protected:
     size_t _id[3]{0, 0, 0};
 };
 
-std::pair<std::vector<Point_3>, std::vector<Triangle>> LoadVFAssimp( const std::string& path );
-void WriteVFAssimp( const std::vector<Point_3>& vertices, const std::vector<Triangle>& faces, const std::string& path);
-void WriteCgalPolyAssimp( const Polyhedron& m, const std::string& path );
-std::pair<std::vector<Point_3>, std::vector<Triangle>> PolyhedronToVF( const Polyhedron& m );
-std::unique_ptr<Polyhedron> LoadPolyhedron( const std::string& path );
+struct ToothFrame
+{
+    Point_3 centroid;
+    Vector_3 up;
+};
 
+std::unordered_map<int, ToothFrame> LoadToothFrames( const std::string& path );
+std::unordered_map<int, ToothFrame> LoadToothFrames( const char* json );
 void LoadLabels( Polyhedron& mesh, std::string path );
 void PreprocessMesh( Polyhedron& mesh );
 std::vector<Polyhedron> SplitByLabel(Polyhedron& mesh);
 
-void ProcessOneTooth( Polyhedron& m );
+void ProcessOneTooth( Polyhedron& m, Point_3 centroid, Vector_3 up);

@@ -104,7 +104,7 @@ public:
     Polyhedron( const Polyhedron& mesh );
     Polyhedron() : CPolyhedron() {}
 
-    std::pair<std::vector<Point_3>, std::vector<int>> ToVerticesFaces() const;
+    std::pair<std::vector<Point_3>, std::vector<unsigned>> ToVerticesFaces() const;
 
     void WriteOFF( const std::string& path ) const;
     void WriteOBJ( const std::string& path ) const;
@@ -129,27 +129,11 @@ protected:
 template<typename HDS>
 inline void PolyhedronObjBulider<HDS>::operator()( HDS& hds )
 {
-    using namespace nlohmann;
-    std::ifstream label_ifs( "../../test/mesh1.json" );
-    json data = json::parse( label_ifs );
-    if (data.find( "labels" ) == data.end())
-    {
-        std::cout << "Invalid Json" << std::endl;
-        return;
-    }
-    std::vector<int> labels = data["labels"].get<std::vector<int>>();
-    if(labels.size() != _vertices.size())
-    {
-        std::cout << "number of labels != number of vertices" << std::endl;
-        return;
-    }
-
     CGAL::Polyhedron_incremental_builder_3<HDS> builder( hds, true );
     builder.begin_surface( _vertices.size(), _indices.size() / 3 );
     for (size_t i = 0, size = _vertices.size(); i < size; i += 1)
     {
         auto hv = builder.add_vertex( _vertices[i] );
-        hv->_label = labels[i];
     }
     for (int f = 0, size = _indices.size() / 3; f < size; ++f)
     {

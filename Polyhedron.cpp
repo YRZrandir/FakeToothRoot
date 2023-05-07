@@ -25,10 +25,10 @@ Polyhedron::Polyhedron( const Polyhedron& mesh )
 
 }
 
-std::pair<std::vector<Point_3>, std::vector<int>> Polyhedron::ToVerticesFaces() const
+std::pair<std::vector<Point_3>, std::vector<unsigned>> Polyhedron::ToVerticesFaces() const
 {
     std::vector<Point_3> vertices;
-    std::vector<int> indices;
+    std::vector<unsigned> indices;
 
     std::unordered_map<decltype(vertices_begin()), size_t> vertex_id_map;
     size_t v_count = 0;
