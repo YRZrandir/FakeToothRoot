@@ -1,9 +1,4 @@
 #include "FakeToothRoot.h"
-#include <assimp/mesh.h>
-#include <assimp/scene.h>
-#include <assimp/Importer.hpp>
-#include <assimp/Exporter.hpp>
-#include <assimp/postprocess.h>
 #include <CGAL/Polygon_mesh_processing/border.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
@@ -156,13 +151,15 @@ void ProcessOneTooth( Polyhedron& m, Point_3 centroid, Vector_3 up )
         return len_hole0 < len_hole1;
     });
     hHalfedge max_hole_edge = *max_hole;
-    borders.erase(max_hole);
 
-    for(auto hh : borders)
-    {
-        std::vector<hFacet> patch_faces;
-        CGAL::Polygon_mesh_processing::triangulate_hole(m, hh, std::back_inserter(patch_faces));
-    }
+
+    // borders.erase(max_hole);
+
+    // for(auto hh : borders)
+    // {
+    //     std::vector<hFacet> patch_faces;
+    //     CGAL::Polygon_mesh_processing::triangulate_hole(m, hh, std::back_inserter(patch_faces));
+    // }
 
     std::vector<hHalfedge> border_edges;
     for(auto hh : CGAL::halfedges_around_face(max_hole_edge, m))

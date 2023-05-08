@@ -7,9 +7,14 @@
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
 #include <CGAL/version.h>
 #include "FakeToothRoot.h"
-
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+extern "C"
+{
 void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const unsigned* indices, unsigned nb_faces, const unsigned* labels, const char* frame_json,
- float** out_vertices, unsigned** out_indices, unsigned* nb_out_vertices, unsigned* nb_out_faces)
+ float** out_vertices, unsigned** out_indices, unsigned** out_labels, unsigned* nb_out_vertices, unsigned* nb_out_faces)
+
 {
     std::vector<Point_3> points;
     std::vector<int> faces;
@@ -18,8 +23,6 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
     for(unsigned i = 0; i < nb_faces * 3; i++)
         faces.push_back(indices[i]);
     Polyhedron scanmesh(points, faces);
-    std::cout << scanmesh.size_of_vertices() << ' ' << scanmesh.size_of_facets() << ' ' << scanmesh.is_valid() << std::endl;
-    size_t count = 0;
     for(auto hv : CGAL::vertices(scanmesh))
         hv->_label = labels[hv->_idx];
 
@@ -31,7 +34,6 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
         hf->_label = std::max(l0, std::max(l1, l2));
     }
 
-    scanmesh.WriteOBJ("../test/testout.obj");
     auto frames = LoadToothFrames(frame_json);
     auto meshes = SplitByLabel(scanmesh);
 
@@ -51,15 +53,14 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
             vt->_label = vs->_label;
     }
 
-    std::cout << result_mesh.size_of_vertices() << " " << result_mesh.size_of_facets() << std::endl;
-
     *nb_out_vertices = result_mesh.size_of_vertices();
     *nb_out_faces = result_mesh.size_of_facets();
 
     *out_vertices = new float[*nb_out_vertices * 3];
     *out_indices = new unsigned[*nb_out_faces * 3];
+    *out_labels = new unsigned[*nb_out_vertices];
 
-    count = 0;
+    size_t count = 0;
     std::unordered_map<hVertex, int> idmap;
     for(auto& hv : CGAL::vertices(result_mesh))
     {
@@ -67,6 +68,7 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
         (*out_vertices)[count * 3 + 0] = p.x();
         (*out_vertices)[count * 3 + 1] = p.y();
         (*out_vertices)[count * 3 + 2] = p.z();
+        (*out_labels)[count] = hv->_label;
         idmap[hv] = count;
         ++count;
     }
@@ -82,6 +84,7 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
         (*out_indices)[count * 3 + 2] = idmap[hv2];
         ++count;
     }
+}
 }
 
 void Run(int argc, char* argv[])
@@ -159,9 +162,10 @@ int main(int argc, char* argv[])
 
     float* out_vertices{nullptr};
     unsigned* out_indices{nullptr};
+    unsigned* out_labels{nullptr};
     unsigned nb_out_vertices{0};
     unsigned nb_out_faces{0};
-    GenFakeToothRoot(vertices.data(), scanmesh.size_of_vertices(), indices.data(), scanmesh.size_of_facets(), labels.data(), frame_json.c_str(), &out_vertices, &out_indices, &nb_out_vertices, &nb_out_faces);
+    GenFakeToothRoot(vertices.data(), scanmesh.size_of_vertices(), indices.data(), scanmesh.size_of_facets(), labels.data(), frame_json.c_str(), &out_vertices, &out_indices, &out_labels, &nb_out_vertices, &nb_out_faces);
 
     std::vector<Point_3> out_points;
     std::vector<int> out_faces;
@@ -172,6 +176,14 @@ int main(int argc, char* argv[])
     
     std::cout << out_points.size() << " " << out_faces.size() << std::endl;
     Polyhedron result_mesh{out_points, out_faces};
+    int count = 0;
+    for(auto hv : CGAL::vertices(result_mesh))
+        hv->_label = out_labels[count++]; 
+
     result_mesh.WriteOBJ("../test/testout.obj");
+
+    delete[] out_vertices;
+    delete[] out_indices;
+    delete[] out_labels;
     return 0;
 }
