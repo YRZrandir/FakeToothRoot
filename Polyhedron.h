@@ -26,6 +26,7 @@ public:
     MyVertex(const Point& p, int label) : CGAL::HalfedgeDS_vertex_base<Refs, CGAL::Tag_true, Point>(p), _label(label) {}
 public:
     int _label{ 0 };
+    int _idx{0};
 };
 
 template <class Refs>
@@ -134,6 +135,7 @@ inline void PolyhedronObjBulider<HDS>::operator()( HDS& hds )
     for (size_t i = 0, size = _vertices.size(); i < size; i += 1)
     {
         auto hv = builder.add_vertex( _vertices[i] );
+        hv->_idx = i;
     }
     for (int f = 0, size = _indices.size() / 3; f < size; ++f)
     {

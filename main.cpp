@@ -18,10 +18,10 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
     for(unsigned i = 0; i < nb_faces * 3; i++)
         faces.push_back(indices[i]);
     Polyhedron scanmesh(points, faces);
-
+    std::cout << scanmesh.size_of_vertices() << ' ' << scanmesh.size_of_facets() << ' ' << scanmesh.is_valid() << std::endl;
     size_t count = 0;
     for(auto hv : CGAL::vertices(scanmesh))
-        hv->_label = labels[count++];
+        hv->_label = labels[hv->_idx];
 
     for(auto hf : CGAL::faces(scanmesh))
     {
@@ -31,6 +31,7 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
         hf->_label = std::max(l0, std::max(l1, l2));
     }
 
+    scanmesh.WriteOBJ("../test/testout.obj");
     auto frames = LoadToothFrames(frame_json);
     auto meshes = SplitByLabel(scanmesh);
 
@@ -49,6 +50,8 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
         for(auto& [vs, vt] : v2v)
             vt->_label = vs->_label;
     }
+
+    std::cout << result_mesh.size_of_vertices() << " " << result_mesh.size_of_facets() << std::endl;
 
     *nb_out_vertices = result_mesh.size_of_vertices();
     *nb_out_faces = result_mesh.size_of_facets();
@@ -112,7 +115,6 @@ void Run(int argc, char* argv[])
     LoadLabels(scanmesh, label_path);
     auto frames = LoadToothFrames(frame_path);
     auto meshes = SplitByLabel(scanmesh);
-
     for(int i = 0; i < meshes.size(); i++)
     {
         auto& m = meshes[i];
@@ -136,8 +138,8 @@ void Run(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     Polyhedron scanmesh;
-    CGAL::IO::read_OBJ("../test/oral_scan_L.obj", scanmesh);
-    LoadLabels(scanmesh, "../test/oral_scan_L.json");
+    CGAL::IO::read_OBJ("../test/oral_scan_U.obj", scanmesh);
+    LoadLabels(scanmesh, "../test/oral_scan_U.json");
 
     auto [points, indices] = scanmesh.ToVerticesFaces();
     std::vector<float> vertices;
@@ -164,9 +166,11 @@ int main(int argc, char* argv[])
     std::vector<Point_3> out_points;
     std::vector<int> out_faces;
     for(unsigned i = 0; i < nb_out_vertices; i++)
-        points.emplace_back(out_vertices[i * 3], out_vertices[i * 3 + 1], out_vertices[i * 3 + 2]);
+        out_points.emplace_back(out_vertices[i * 3], out_vertices[i * 3 + 1], out_vertices[i * 3 + 2]);
     for(unsigned i = 0; i < nb_out_faces * 3; i++)
         out_faces.push_back(out_indices[i]);
+    
+    std::cout << out_points.size() << " " << out_faces.size() << std::endl;
     Polyhedron result_mesh{out_points, out_faces};
     result_mesh.WriteOBJ("../test/testout.obj");
     return 0;
