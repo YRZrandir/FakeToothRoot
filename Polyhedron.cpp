@@ -80,6 +80,10 @@ void Polyhedron::WriteOBJ( const std::string& path ) const
     {
         vertex_id_map[hv] = v_count++;
         auto color = COLORS[hv->_label % COLORS.size()];
+        if(hv->_label > 20 && hv->_label < 30 || hv->_label > 40 && hv->_label < 50)
+        {
+            color = COLORS[8 - hv->_label % COLORS.size() ];
+        }
         ss << "v " << hv->point().x() << ' ' << hv->point().y() << ' ' << hv->point().z() << ' ' << color[0] << ' ' << color[1] << ' ' << color[2] << '\n';
     }
 

@@ -141,8 +141,10 @@ void Run(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     Polyhedron scanmesh;
-    CGAL::IO::read_OBJ("../test/oral_scan_U.obj", scanmesh);
-    LoadLabels(scanmesh, "../test/oral_scan_U.json");
+    CGAL::IO::read_OBJ("../../test/oral_scan_U.obj", scanmesh);
+    LoadLabels(scanmesh, "../../test/oral_scan_U.json");
+    scanmesh.WriteOBJ("../../test/test.obj");
+    
 
     auto [points, indices] = scanmesh.ToVerticesFaces();
     std::vector<float> vertices;
@@ -157,7 +159,7 @@ int main(int argc, char* argv[])
     for(auto& hv : CGAL::vertices(scanmesh))
         labels.push_back(hv->_label);
 
-    std::ifstream frame_ifs("../test/frame.json");
+    std::ifstream frame_ifs("../../test/frame.json");
     std::string frame_json{std::istreambuf_iterator<char>(frame_ifs), std::istreambuf_iterator<char>()};
 
     float* out_vertices{nullptr};
