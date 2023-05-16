@@ -13,6 +13,7 @@
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/IO/Color.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
+#include <CGAL/Polyhedron_items_with_id_3.h>
 #include <nlohmann/json.hpp>
 
 
@@ -65,7 +66,7 @@ class LabelConstraint
 };
 
 
-class MyItems : public CGAL::Polyhedron_items_3
+class MyItems : public CGAL::Polyhedron_items_with_id_3
 {
 public:
     template<class Refs, class Traits>
@@ -151,6 +152,32 @@ inline void PolyhedronObjBulider<HDS>::operator()( HDS& hds )
 #define CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME Polyhedron
 #define CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME CPolyhedron
 #include <CGAL/boost/graph/graph_traits_inheritance_macros.h>
+#define CGAL_PM_DT_SPEC(DTAG) \
+namespace boost {\
+template <typename CGAL_XX_YATP> \
+struct property_map<CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME, DTAG<CGAL_XX_YATP> > \
+  : property_map<CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME, DTAG<CGAL_XX_YATP> > \
+{};\
+} /* boost namespace */\
+\
+namespace CGAL { \
+template <typename CGAL_XX_YATP>\
+typename boost::property_map<CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME, DTAG<CGAL_XX_YATP> >::type \
+get(DTAG<CGAL_XX_YATP> t, CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME& g) \
+{ \
+  return get(t, static_cast<CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME&>(g)); \
+} \
+\
+template <typename CGAL_XX_YATP>\
+typename boost::property_map<CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME, DTAG<CGAL_XX_YATP> >::const_type \
+get(DTAG<CGAL_XX_YATP> t, const CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME& g) \
+{ \
+  return get(t, static_cast<const CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME&>(g)); \
+}\
+} //CGAL namespace
+CGAL_PM_DT_SPEC(boost::vertex_index_t)
+CGAL_PM_DT_SPEC(boost::halfedge_index_t)
+#undef CGAL_PM_DT_SPEC
 #undef CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME
 #undef CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME
 

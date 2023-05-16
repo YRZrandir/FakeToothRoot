@@ -122,7 +122,7 @@ void Run(int argc, char* argv[])
     {
         auto& m = meshes[i];
         int label = m.vertices_begin()->_label;
-        ProcessOneTooth(m, frames[label].centroid, frames[label].up);
+        ProcessOneToothLaplacian(m, frames[label].centroid, frames[label].up);
     }
 
     Polyhedron result_mesh;
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
     for(auto hv : CGAL::vertices(result_mesh))
         hv->_label = out_labels[count++]; 
 
-    result_mesh.WriteOBJ("../test/testout.obj");
+    result_mesh.WriteOBJ("../../test/testout.obj");
 
     delete[] out_vertices;
     delete[] out_indices;

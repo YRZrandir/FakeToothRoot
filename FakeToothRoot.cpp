@@ -1,8 +1,10 @@
 #include "FakeToothRoot.h"
+#include <CGAL/aff_transformation_tags.h>
 #include <CGAL/Polygon_mesh_processing/border.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
 #include <CGAL/boost/graph/Face_filtered_graph.h>
+#include <CGAL/Surface_mesh_deformation.h>
 #include <nlohmann/json.hpp>
 
 void LoadLabels( Polyhedron& mesh, std::string path )
@@ -245,4 +247,71 @@ void ProcessOneTooth( Polyhedron& m, Point_3 centroid, Vector_3 up )
     }
 
     CGAL::Polygon_mesh_processing::triangulate_hole(m, new_edges[0], CGAL::Emptyset_iterator());
+}
+
+void ProcessOneToothLaplacian( Polyhedron& m, Point_3 centroid, Vector_3 up)
+{
+    up = -up;
+    CGAL::Polygon_mesh_processing::keep_largest_connected_components(m, 1);
+    std::vector<hHalfedge> borders;
+    CGAL::Polygon_mesh_processing::extract_boundary_cycles(m, std::back_inserter(borders));
+
+    auto max_hole = std::max_element(borders.begin(), borders.end(), [&m]( hHalfedge hh0, hHalfedge hh1 ) {
+        int len_hole0 = 0;
+        for(auto iborder : CGAL::halfedges_around_face(hh0, m))
+            len_hole0++;
+        int len_hole1 = 0;
+        for(auto iborder : CGAL::halfedges_around_face(hh1, m))
+            len_hole1++;
+        
+        return len_hole0 < len_hole1;
+    });
+    hHalfedge max_hole_edge = *max_hole;
+
+    std::vector<hFacet> patch_facets;
+    std::vector<hVertex> patch_vertices;
+    CGAL::Polygon_mesh_processing::triangulate_refine_and_fair_hole(m, max_hole_edge, std::back_inserter(patch_facets), std::back_inserter(patch_vertices));
+
+    KernelEpick::Ray_3 ray(centroid, up);
+    hFacet target;
+    double t_max = 0.0;
+    for(auto hf : patch_facets)
+    {
+        KernelEpick::Triangle_3 tri { hf->halfedge()->vertex()->point(),
+            hf->halfedge()->next()->vertex()->point(),
+            hf->halfedge()->next()->next()->vertex()->point()
+        };
+        auto ret = CGAL::intersection(ray, tri);
+        if(ret.has_value() && (*ret).which() == 0)
+        {
+            Point_3 p = boost::get<Point_3>(*ret);
+            double t = CGAL::squared_distance(p, centroid);
+            if(t > t_max)
+            {
+                t_max = t;
+                target = hf;
+            }
+        }
+    }
+
+    CGAL::set_halfedgeds_items_id(m);
+
+    CGAL::Surface_mesh_deformation<Polyhedron, CGAL::Default, CGAL::Default, CGAL::SRE_ARAP> deform_mesh(m);
+
+    deform_mesh.set_sre_arap_alpha(0.02);
+
+    std::vector<hVertex> control_vertices{ target->halfedge()->vertex(), target->halfedge()->next()->vertex(), target->halfedge()->prev()->vertex() };
+
+    deform_mesh.insert_roi_vertices(patch_vertices.begin(), patch_vertices.end());
+    deform_mesh.insert_control_vertices(control_vertices.begin(), control_vertices.end());
+
+    deform_mesh.preprocess();
+
+    KernelEpick::Aff_transformation_3 aff(CGAL::Translation(), up * 7.0);
+    for(auto hv : control_vertices)
+    {
+        deform_mesh.set_target_position(hv, hv->point().transform(aff));
+    }
+
+    deform_mesh.deform(10, 1e-4);
 }
