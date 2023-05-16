@@ -39,9 +39,11 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
 
     for(int i = 0; i < meshes.size(); i++)
     {
+        std::cout << i << std::endl;
         auto& m = meshes[i];
         int label = m.vertices_begin()->_label;
-        ProcessOneTooth(m, frames[label].centroid, frames[label].up);
+        ProcessOneToothLaplacian(m, frames[label].centroid, frames[label].up);
+        m.WriteOBJ(std::string("../../test/tooth") + std::to_string(i) + std::string(".obj"));
     }
 
     Polyhedron result_mesh;
@@ -53,8 +55,8 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
             vt->_label = vs->_label;
     }
 
-    *nb_out_vertices = result_mesh.size_of_vertices();
-    *nb_out_faces = result_mesh.size_of_facets();
+    *nb_out_vertices = static_cast<unsigned int>(result_mesh.size_of_vertices());
+    *nb_out_faces = static_cast<unsigned int>(result_mesh.size_of_facets());
 
     *out_vertices = new float[*nb_out_vertices * 3];
     *out_indices = new unsigned[*nb_out_faces * 3];

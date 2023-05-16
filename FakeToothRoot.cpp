@@ -296,16 +296,32 @@ void ProcessOneToothLaplacian( Polyhedron& m, Point_3 centroid, Vector_3 up)
 
     CGAL::set_halfedgeds_items_id(m);
 
-    CGAL::Surface_mesh_deformation<Polyhedron, CGAL::Default, CGAL::Default, CGAL::SRE_ARAP> deform_mesh(m);
+    CGAL::Surface_mesh_deformation<Polyhedron> deform_mesh(m);
 
-    deform_mesh.set_sre_arap_alpha(0.02);
+    deform_mesh.set_sre_arap_alpha(1.0);
 
-    std::vector<hVertex> control_vertices{ target->halfedge()->vertex(), target->halfedge()->next()->vertex(), target->halfedge()->prev()->vertex() };
+    std::unordered_set<hVertex> control_vertices{ target->halfedge()->vertex(), target->halfedge()->next()->vertex(), target->halfedge()->prev()->vertex() };
+    for(int i = 0; i < 1; i++)
+    {
+        std::vector<hVertex> neighbors;
+        for(auto hv : control_vertices)
+        {
+            for(auto nei : CGAL::vertices_around_target(hv, m))
+            {
+                neighbors.push_back(nei);
+            }
+        }
+        control_vertices.insert(neighbors.begin(), neighbors.end());
+    }
 
     deform_mesh.insert_roi_vertices(patch_vertices.begin(), patch_vertices.end());
     deform_mesh.insert_control_vertices(control_vertices.begin(), control_vertices.end());
 
-    deform_mesh.preprocess();
+    bool success = deform_mesh.preprocess();
+    if(!success)
+    {
+        std::cout << "deform preprocess fail" << std::endl;
+    }
 
     KernelEpick::Aff_transformation_3 aff(CGAL::Translation(), up * 7.0);
     for(auto hv : control_vertices)
@@ -313,5 +329,5 @@ void ProcessOneToothLaplacian( Polyhedron& m, Point_3 centroid, Vector_3 up)
         deform_mesh.set_target_position(hv, hv->point().transform(aff));
     }
 
-    deform_mesh.deform(10, 1e-4);
+    deform_mesh.deform(100, 1e-4);
 }

@@ -18,20 +18,20 @@
 
 
 template <class Refs, typename Tag, typename Point>
-class MyVertex : public CGAL::HalfedgeDS_vertex_base<Refs, CGAL::Tag_true, Point>
+class MyVertex : public CGAL::HalfedgeDS_vertex_max_base_with_id<Refs, Point, size_t>
 {
 public:
     MyVertex() = default;
-    explicit MyVertex( const Point& p ) : CGAL::HalfedgeDS_vertex_base<Refs, CGAL::Tag_true, Point>( p ) {}
-    MyVertex(const MyVertex& p) : CGAL::HalfedgeDS_vertex_base<Refs, CGAL::Tag_true, Point>( p ), _label(p._label) {}
-    MyVertex(const Point& p, int label) : CGAL::HalfedgeDS_vertex_base<Refs, CGAL::Tag_true, Point>(p), _label(label) {}
+    explicit MyVertex( const Point& p ) : CGAL::HalfedgeDS_vertex_max_base_with_id<Refs, Point, size_t>( p ) {}
+    MyVertex(const MyVertex& p) : CGAL::HalfedgeDS_vertex_max_base_with_id<Refs, Point, size_t>( p ), _label(p._label) {}
+    MyVertex(const Point& p, int label) : CGAL::HalfedgeDS_vertex_max_base_with_id<Refs, Point, size_t>(p), _label(label) {}
 public:
     int _label{ 0 };
     int _idx{0};
 };
 
 template <class Refs>
-class MyFace : public CGAL::HalfedgeDS_face_base<Refs>
+class MyFace : public CGAL::HalfedgeDS_face_max_base_with_id<Refs, CGAL::Tag_true, size_t>
 {
 public:
     MyFace() = default;
@@ -152,32 +152,39 @@ inline void PolyhedronObjBulider<HDS>::operator()( HDS& hds )
 #define CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME Polyhedron
 #define CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME CPolyhedron
 #include <CGAL/boost/graph/graph_traits_inheritance_macros.h>
-#define CGAL_PM_DT_SPEC(DTAG) \
-namespace boost {\
-template <typename CGAL_XX_YATP> \
-struct property_map<CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME, DTAG<CGAL_XX_YATP> > \
-  : property_map<CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME, DTAG<CGAL_XX_YATP> > \
-{};\
-} /* boost namespace */\
-\
-namespace CGAL { \
-template <typename CGAL_XX_YATP>\
-typename boost::property_map<CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME, DTAG<CGAL_XX_YATP> >::type \
-get(DTAG<CGAL_XX_YATP> t, CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME& g) \
-{ \
-  return get(t, static_cast<CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME&>(g)); \
-} \
-\
-template <typename CGAL_XX_YATP>\
-typename boost::property_map<CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME, DTAG<CGAL_XX_YATP> >::const_type \
-get(DTAG<CGAL_XX_YATP> t, const CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME& g) \
-{ \
-  return get(t, static_cast<const CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME&>(g)); \
-}\
+namespace boost {
+template<>
+struct property_map<Polyhedron, boost::vertex_index_t> 
+: property_map<CPolyhedron, boost::vertex_index_t > 
+{};
+template <>
+struct property_map<Polyhedron, boost::halfedge_index_t > 
+: property_map<CPolyhedron, boost::halfedge_index_t > 
+{};
+}
+namespace CGAL { 
+inline typename boost::property_map<Polyhedron, boost::vertex_index_t >::type 
+get(boost::vertex_index_t t, Polyhedron& g) 
+{ 
+  return get(t, static_cast<CPolyhedron&>(g)); 
+} 
+inline typename boost::property_map<Polyhedron, boost::vertex_index_t>::const_type 
+get(boost::vertex_index_t t, const Polyhedron& g) 
+{ 
+  return get(t, static_cast<const CPolyhedron&>(g)); 
+}
+inline typename boost::property_map<Polyhedron, boost::halfedge_index_t >::type 
+get(boost::halfedge_index_t t, Polyhedron& g) 
+{ 
+  return get(t, static_cast<CPolyhedron&>(g)); 
+} 
+inline typename boost::property_map<Polyhedron, boost::halfedge_index_t>::const_type 
+get(boost::halfedge_index_t t, const Polyhedron& g) 
+{ 
+  return get(t, static_cast<const CPolyhedron&>(g)); 
+}
 } //CGAL namespace
-CGAL_PM_DT_SPEC(boost::vertex_index_t)
-CGAL_PM_DT_SPEC(boost::halfedge_index_t)
-#undef CGAL_PM_DT_SPEC
+
 #undef CGAL_GRAPH_TRAITS_INHERITANCE_CLASS_NAME
 #undef CGAL_GRAPH_TRAITS_INHERITANCE_BASE_CLASS_NAME
 
