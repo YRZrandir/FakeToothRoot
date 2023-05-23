@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <iostream>
 #include <CGAL/boost/graph/copy_face_graph.h>
-#include <CGAL/boost/graph/IO/OBJ.h>
+#include <CGAL/boost/graph/io.h>
 #include <CGAL/Polygon_mesh_processing/border.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_hole.h>
@@ -37,13 +37,14 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
     auto frames = LoadToothFrames(frame_json);
     auto meshes = SplitByLabel(scanmesh);
 
+#pragma omp parallel for
     for(int i = 0; i < meshes.size(); i++)
     {
         std::cout << i << std::endl;
         auto& m = meshes[i];
         int label = m.vertices_begin()->_label;
-        ProcessOneToothLaplacian(m, frames[label].centroid, frames[label].up);
-        m.WriteOBJ(std::string("../../test/tooth") + std::to_string(i) + std::string(".obj"));
+        ProcessOneTooth(m, frames[label].centroid, frames[label].up);
+        //m.WriteOBJ(std::string("../../test/tooth") + std::to_string(i) + std::string(".obj"));
     }
 
     Polyhedron result_mesh;
@@ -124,7 +125,7 @@ void Run(int argc, char* argv[])
     {
         auto& m = meshes[i];
         int label = m.vertices_begin()->_label;
-        ProcessOneToothLaplacian(m, frames[label].centroid, frames[label].up);
+        ProcessOneTooth(m, frames[label].centroid, frames[label].up);
     }
 
     Polyhedron result_mesh;
@@ -143,10 +144,9 @@ void Run(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     Polyhedron scanmesh;
-    CGAL::IO::read_OBJ("../../test/oral_scan_U.obj", scanmesh);
+    CGAL::IO::read_polygon_mesh("../../test/oral_scan_U.ply", scanmesh);
     LoadLabels(scanmesh, "../../test/oral_scan_U.json");
-    scanmesh.WriteOBJ("../../test/test.obj");
-    
+    //scanmesh.WriteOBJ("../../test/test1.obj");
 
     auto [points, indices] = scanmesh.ToVerticesFaces();
     std::vector<float> vertices;
