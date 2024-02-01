@@ -43,5 +43,5 @@ void LoadLabels( Polyhedron& mesh, std::string path );
 void PreprocessMesh( Polyhedron& mesh );
 std::vector<Polyhedron> SplitByLabel(Polyhedron& mesh);
 
-void ProcessOneTooth( Polyhedron& m, Point_3 centroid, Vector_3 up);
-void ProcessOneToothLaplacian( Polyhedron& m, Point_3 centroid, Vector_3 up);
+void ProcessOneTooth( Polyhedron& m, Point_3 centroid, Vector_3 up, int label);
+void ProcessOneToothLaplacian( Polyhedron& m, Point_3 centroid, Vector_3 up, int label);

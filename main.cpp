@@ -36,25 +36,28 @@ void GenFakeToothRoot(const float* vertices, const unsigned nb_vertices, const u
 
     auto frames = LoadToothFrames(frame_json);
     auto meshes = SplitByLabel(scanmesh);
-
+    std::vector<int> labellist;
 #pragma omp parallel for
     for(int i = 0; i < meshes.size(); i++)
     {
         std::cout << i << std::endl;
         auto& m = meshes[i];
         int label = m.vertices_begin()->_label;
-        ProcessOneTooth(m, frames[label].centroid, frames[label].up);
+        labellist.push_back(label);
+        ProcessOneToothLaplacian(m, frames[label].centroid, frames[label].up, label);
         //m.WriteOBJ(std::string("../../test/tooth") + std::to_string(i) + std::string(".obj"));
     }
 
     Polyhedron result_mesh;
-    for(auto& m : meshes)
+    for(int i = 0; i < meshes.size(); i++)
     {
+        auto& m = meshes[i];
         std::unordered_map<hVertex, hVertex> v2v;
         CGAL::copy_face_graph(m, result_mesh, CGAL::parameters::vertex_to_vertex_map(boost::make_assoc_property_map(v2v)));
         for(auto& [vs, vt] : v2v)
-            vt->_label = vs->_label;
+            vt->_label = labellist[i];
     }
+
 
     *nb_out_vertices = static_cast<unsigned int>(result_mesh.size_of_vertices());
     *nb_out_faces = static_cast<unsigned int>(result_mesh.size_of_facets());
@@ -125,7 +128,7 @@ void Run(int argc, char* argv[])
     {
         auto& m = meshes[i];
         int label = m.vertices_begin()->_label;
-        ProcessOneTooth(m, frames[label].centroid, frames[label].up);
+        ProcessOneTooth(m, frames[label].centroid, frames[label].up, label);
     }
 
     Polyhedron result_mesh;
@@ -184,7 +187,9 @@ int main(int argc, char* argv[])
     for(auto hv : CGAL::vertices(result_mesh))
         hv->_label = out_labels[count++]; 
 
-    result_mesh.WriteOBJ("../../test/testout.obj");
+    std::ofstream ofs("../../test/faketooth.ply", std::ios::binary);
+    CGAL::IO::set_binary_mode(ofs);
+    CGAL::IO::write_PLY(ofs, result_mesh);
 
     delete[] out_vertices;
     delete[] out_indices;
